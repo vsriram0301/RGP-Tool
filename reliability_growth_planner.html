@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Reliability Growth Plan</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 15px;
+      background: #f0f2f5;
+      font-family: Arial, sans-serif;
+      color: #333;
+    }
+    .app-container {
+      max-width: 1150px;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    .card {
+      background: #fff;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-top: 15px;
+    }
+    .header-card {
+      background: #fff;
+      padding: 14px 18px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-export {
+      color: #ffffff;
+      border: none;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-excel {
+      background-color: #217346;
+    }
+    .btn-excel:hover {
+      background-color: #1a5c38;
+    }
+    .btn-csv {
+      background-color: #0366d6;
+    }
+    .btn-csv:hover {
+      background-color: #024ea2;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+    label {
+      font-size: 12px;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 3px;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    .phase-card {
+      border-radius: 6px;
+      padding: 12px;
+      transition: opacity 0.2s ease;
+    }
+    #phase_output_table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: center;
+      border: 1px solid #d0d7de;
+    }
+    #phase_output_table th, #phase_output_table td {
+      border: 1px solid #d0d7de;
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
+    #phase_output_table th {
+      background-color: #f6f8fa;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container" id="growth_app_container">
+  
+  <!-- Customizable Project Title Header & Export Actions -->
+  <div class="header-card">
+    <div style="display: flex; align-items: center; gap: 12px; width: 60%;">
+      <label style="font-size: 14px; white-space: nowrap;">Project Title:</label>
+      <input type="text" id="project_title_input" value="Reliability Growth Plan" 
+             style="font-size: 16px; font-weight: bold; color: #111;">
+    </div>
+    <div class="btn-group">
+      <button id="btn_export_excel" class="btn-export btn-excel">
+        📊 Export to Excel
+      </button>
+      <button id="btn_export_csv" class="btn-export btn-csv">
+        📄 Export to CSV
+      </button>
+    </div>
+  </div>
+  
+  <!-- Interactive Plotly Graph -->
+  <div id="growth_plot" style="width: 100%; height: 530px; background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-top: 15px;"></div>
+
+  <!-- Unified Program & Target Parameters Input Box -->
+  <div class="card">
+    <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 14.5px; color: #333;">Program & Target Parameters</h3>
+    <div class="grid-3">
+      <div>
+        <label>Predecessor CR:</label>
+        <input type="number" id="inp_pred_cr" value="2.260" step="0.01" min="0">
+      </div>
+      <div>
+        <label>Infant Mortality CR:</label>
+        <input type="number" id="inp_infant_cr" value="0.5876" step="0.001" min="0">
+      </div>
+      <div>
+        <label>PPR Improvements:</label>
+        <input type="number" id="inp_ppr" value="0.512" step="0.01" min="0">
+      </div>
+      <div>
+        <label style="color: #800080;">Project Claim Rate (CR) Target:</label>
+        <input type="number" id="inp_cr_target" value="1.600" step="0.05" min="0.01" style="border: 1px solid #800080;">
+      </div>
+      <div>
+        <label>Average Annual Usage (hrs):</label>
+        <input type="number" id="inp_annual_usage" value="650" step="10" min="1">
+      </div>
+      <div>
+        <label>Management Strategy (MS):</label>
+        <input type="number" id="inp_mgmt_strat" value="0.800" step="0.01" min="0.01" max="1.0">
+      </div>
+      <div>
+        <label style="color: #1f77b4;">Average FEF:</label>
+        <input type="number" id="inp_fef" value="0.700" step="0.01" min="0.01" max="1.0" style="border: 1px solid #1f77b4;">
+      </div>
+      <div>
+        <label style="color: #ff7f0e;">Discovery Beta:</label>
+        <input type="number" id="inp_beta" value="0.750" step="0.01" min="0.01" max="1.0" style="border: 1px solid #ff7f0e;">
+      </div>
+      <div>
+        <label>Phases to Include:</label>
+        <div style="margin-top: 8px;">
+          <label style="display:inline; font-weight: normal;"><input type="radio" name="phases" value="1"> 1 Phase</label>&nbsp;&nbsp;
+          <label style="display:inline; font-weight: normal;"><input type="radio" name="phases" value="2" checked> 2 Phases</label>&nbsp;&nbsp;
+          <label style="display:inline; font-weight: normal;"><input type="radio" name="phases" value="3"> 3 Phases</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Program Target Metrics Summary -->
+  <div class="card" style="font-size: 13px; line-height: 1.6; border-left: 5px solid #800080;">
+    <strong style="font-size: 14px; color: #333;">Calculated Program Targets:</strong><br>
+    Useful Life MTBF: <span id="out_useful_mtbf" style="font-weight:bold; color:#1f77b4;">-</span> hrs &nbsp;|&nbsp; 
+    Useful Life RF Target: <span id="out_useful_rf" style="font-weight:bold; color:#ff7f0e;">-</span> &nbsp;|&nbsp; 
+    Useful Life MTBF Target: <span id="out_useful_target" style="font-weight:bold; color:#800080;">-</span> hrs
+  </div>
+
+  <!-- Dynamic Phase Parameter Inputs -->
+  <div class="card">
+    <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 14.5px; color: #333;">RGP Input Parameters (60/40 Split for 20,000 hrs)</h3>
+    <div class="grid-3">
+      <!-- Phase 1 Inputs -->
+      <div id="card_p0" class="phase-card" style="border: 1px solid #cce5ff; background: #f8fbff;">
+        <label style="color: #1f77b4;">Phase 1 Name:</label>
+        <input type="text" id="p0_name" value="Phase 1" style="margin-bottom: 8px; font-weight: bold; border: 1px solid #1f77b4; color: #1f77b4;">
+        <label>Test Time (hrs):</label>
+        <input type="number" id="p0_time" value="12000" step="500" min="100" style="margin-bottom: 8px;">
+        <label>Fix Delay (hrs):</label>
+        <input type="number" id="p0_delay" value="500" step="50" min="0" style="margin-bottom: 8px;">
+        <label>New Content Ratio:</label>
+        <input type="number" id="p0_content" value="3.5" step="0.1" min="0" style="margin-bottom: 8px;">
+        <label>Units Tested:</label>
+        <input type="number" id="p0_units" value="2" step="1" min="1">
+      </div>
+
+      <!-- Phase 2 Inputs -->
+      <div id="card_p1" class="phase-card" style="border: 1px solid #f8d7da; background: #fffdfd;">
+        <label style="color: #d62728;">Phase 2 Name:</label>
+        <input type="text" id="p1_name" value="Phase 2" style="margin-bottom: 8px; font-weight: bold; border: 1px solid #d62728; color: #d62728;">
+        <label>Test Time (hrs):</label>
+        <input type="number" id="p1_time" value="8000" step="500" min="100" style="margin-bottom: 8px;">
+        <label>Fix Delay (hrs):</label>
+        <input type="number" id="p1_delay" value="200" step="50" min="0" style="margin-bottom: 8px;">
+        <label>New Content Ratio:</label>
+        <input type="number" id="p1_content" value="0.0" step="0.1" min="0" style="margin-bottom: 8px;">
+        <label>Units Tested:</label>
+        <input type="number" id="p1_units" value="2" step="1" min="1">
+      </div>
+
+      <!-- Phase 3 Inputs -->
+      <div id="card_p2" class="phase-card" style="border: 1px solid #d4edda; background: #fafffb;">
+        <label style="color: #2ca02c;">Phase 3 Name:</label>
+        <input type="text" id="p2_name" value="Phase 3" style="margin-bottom: 8px; font-weight: bold; border: 1px solid #2ca02c; color: #2ca02c;">
+        <label>Test Time (hrs):</label>
+        <input type="number" id="p2_time" value="5000" step="500" min="100" style="margin-bottom: 8px;">
+        <label>Fix Delay (hrs):</label>
+        <input type="number" id="p2_delay" value="200" step="50" min="0" style="margin-bottom: 8px;">
+        <label>New Content Ratio:</label>
+        <input type="number" id="p2_content" value="0.0" step="0.1" min="0" style="margin-bottom: 8px;">
+        <label>Units Tested:</label>
+        <input type="number" id="p2_units" value="2" step="1" min="1">
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrollable Output Table Container -->
+  <div class="card" style="overflow-x: auto;">
+    <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 14.5px; color: #333;">RGB Calculation Output</h3>
+    <table id="phase_output_table">
+      <thead>
+        <tr>
+          <th style="text-align: left; min-width: 110px;">Phase</th>
+          <th style="min-width: 85px;">Weeks</th>
+          <th style="min-width: 75px;">Units</th>
+          <th style="min-width: 110px;">Total Test Time</th>
+          <th style="min-width: 120px;">Avg Test Time / Unit</th>
+          <th style="min-width: 85px;">Fix Delay</th>
+          <th style="min-width: 140px;">Management Strategy</th>
+          <th style="min-width: 105px;">Discovery Beta</th>
+          <th style="min-width: 95px;">Average FEF</th>
+          <th style="min-width: 130px;">Phase New Content</th>
+          <th style="min-width: 115px; font-weight: bold; background: #eef6ff;">Starting UL MTBF</th>
+          <th style="min-width: 105px;">Starting UL RF</th>
+          <th style="min-width: 130px;">Starting Failure Rate</th>
+          <th style="min-width: 95px;">Lambda A</th>
+          <th style="min-width: 95px;">Lambda B</th>
+          <th style="min-width: 90px;">Lambda</th>
+          <th style="min-width: 115px;">Intensity Lambda</th>
+          <th style="min-width: 125px;">Ending Failure Rate</th>
+          <th style="min-width: 115px; font-weight: bold; background: #eef6ff;">Ending UL MTBF</th>
+          <th style="min-width: 105px; font-weight: bold; background: #fffde6;">Initialization</th>
+        </tr>
+      </thead>
+      <tbody id="phase_output_tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+(function() {
+  const container = document.getElementById("growth_app_container");
+  const getEl = (id) => container.querySelector("#" + id);
+
+  const PHASES_CONFIG = [
+    { weeks: 52.0, color: "#1f77b4" },
+    { weeks: 52.0, color: "#d62728" },
+    { weeks: 52.0, color: "#2ca02c" }
+  ];
+
+  let currentMetrics = [];
+  let currentProgramInputs = {};
+
+  function gamma(z) {
+    const g = 7;
+    const C = [
+      0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+      771.32342877765313, -176.61502916214059, 12.507343278686905,
+      -0.138571095836524, 9.9843695780195716e-6, 1.5056327351493116e-7
+    ];
+    if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * gamma(1 - z));
+    z -= 1;
+    let base = C[0];
+    for (let i = 1; i < g + 2; i++) base += C[i] / (z + i);
+    let t = z + g + 0.5;
+    return Math.sqrt(2 * Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * base;
+  }
+
+  function recalculate() {
+    const customTitle = (getEl("project_title_input") ? getEl("project_title_input").value : "") || "Reliability Growth Plan";
+    const fef = Math.max(parseFloat(getEl("inp_fef").value) || 0.70, 0.01);
+    const beta = Math.max(parseFloat(getEl("inp_beta").value) || 0.75, 0.01);
+    const num_phases = parseInt(container.querySelector('input[name="phases"]:checked').value);
+
+    const pred_cr = Math.max(parseFloat(getEl("inp_pred_cr").value) || 2.260, 0.001);
+    const infant_cr = Math.max(parseFloat(getEl("inp_infant_cr").value) || 0.0, 0.0);
+    const ppr = Math.max(parseFloat(getEl("inp_ppr").value) || 0.0, 0.0);
+    const cr_target = Math.max(parseFloat(getEl("inp_cr_target").value) || 1.600, 0.001);
+    const avg_annual_usage = Math.max(parseFloat(getEl("inp_annual_usage").value) || 650.0, 1.0);
+    const mgmt_strategy = Math.min(Math.max(parseFloat(getEl("inp_mgmt_strat").value) || 0.80, 0.01), 1.0);
+
+    const useful_life_rf_target = cr_target - infant_cr;
+    const useful_life_mtbf_target = useful_life_rf_target > 0 ? (avg_annual_usage / useful_life_rf_target) : 0;
+    const cr_denom = pred_cr - infant_cr - ppr;
+    const useful_life_mtbf = cr_denom > 0 ? (avg_annual_usage / cr_denom) : 0;
+
+    currentProgramInputs = {
+      title: customTitle,
+      pred_cr: pred_cr.toFixed(3),
+      infant_cr: infant_cr.toFixed(4),
+      ppr: ppr.toFixed(3),
+      cr_target: cr_target.toFixed(3),
+      avg_annual_usage: avg_annual_usage.toFixed(1),
+      mgmt_strategy: mgmt_strategy.toFixed(3),
+      fef: fef.toFixed(3),
+      beta: beta.toFixed(3),
+      num_phases: num_phases,
+      useful_life_mtbf: useful_life_mtbf.toFixed(3),
+      useful_life_rf_target: useful_life_rf_target.toFixed(3),
+      useful_life_mtbf_target: useful_life_mtbf_target.toFixed(3)
+    };
+
+    if (getEl("out_useful_mtbf")) getEl("out_useful_mtbf").innerText = useful_life_mtbf.toFixed(3);
+    if (getEl("out_useful_rf")) getEl("out_useful_rf").innerText = useful_life_rf_target.toFixed(3);
+    if (getEl("out_useful_target")) getEl("out_useful_target").innerText = useful_life_mtbf_target.toFixed(3);
+
+    for (let c = 0; c < 3; c++) {
+      let card = getEl("card_p" + c);
+      if (card) {
+        if (c < num_phases) {
+          card.style.opacity = "1.0";
+          card.querySelectorAll("input").forEach(inp => inp.disabled = false);
+        } else {
+          card.style.opacity = "0.35";
+          card.querySelectorAll("input").forEach(inp => inp.disabled = true);
+        }
+      }
+    }
+
+    let traces = [];
+    let cum_offset = 0.0;
+    let prev_ending_mtbf = null;
+    currentMetrics = [];
+
+    for (let i = 0; i < num_phases; i++) {
+      const p_cfg = PHASES_CONFIG[i];
+      const phase_name = (getEl("p" + i + "_name") ? getEl("p" + i + "_name").value.trim() : "") || ("Phase " + (i + 1));
+      const total_time = Math.max(parseFloat(getEl("p" + i + "_time").value) || 1000.0, 100.0);
+      const fix_delay = Math.max(parseFloat(getEl("p" + i + "_delay").value) || 0.0, 0.0);
+      const new_content = Math.max(parseFloat(getEl("p" + i + "_content").value) || 0.0, 0.0);
+      const units = Math.max(parseInt(getEl("p" + i + "_units").value) || 1, 1);
+
+      let start_mtbf;
+      if (i === 0) {
+        start_mtbf = (new_content < 1) ? useful_life_mtbf : (1.4 * useful_life_mtbf * Math.pow(new_content, -0.623));
+      } else {
+        start_mtbf = (new_content === 0) ? prev_ending_mtbf : (prev_ending_mtbf * Math.pow(Math.max(new_content, 1), -0.623));
+      }
+
+      const starting_ul_rf = (start_mtbf > 0) ? (avg_annual_usage / start_mtbf) : 0;
+      const lambda_start = (start_mtbf > 0) ? (1.0 / start_mtbf) : 0;
+      const lambda_a = lambda_start * (1.0 - mgmt_strategy);
+      const lambda_b = lambda_start * mgmt_strategy;
+
+      const lam = Math.pow(lambda_b * gamma(1.0 + (1.0 / beta)), beta);
+      const delay_ratio = Math.max((total_time - fix_delay) / total_time, 0.0001);
+      const eff_time = delay_ratio * total_time;
+
+      const intensity_lambda = fef * lam * beta * Math.pow(eff_time, beta - 1.0);
+      const end_failure_rate = lambda_a + lambda_b * (1.0 - fef) + intensity_lambda;
+      const ending_mtbf = (end_failure_rate > 0) ? (1.0 / end_failure_rate) : 0;
+
+      const num = lambda_start - lambda_a - ((1.0 - fef) * lambda_b);
+      const den = fef * lam * beta;
+      const init_threshold = (den > 0 && num > 0) ? (Math.pow(num / den, 1.0 / (beta - 1.0)) / delay_ratio) : 0;
+
+      prev_ending_mtbf = ending_mtbf;
+
+      currentMetrics.push({
+        name: phase_name,
+        color: p_cfg.color,
+        weeks: p_cfg.weeks.toFixed(3),
+        units: Math.round(units).toString(),
+        total_time: Math.round(total_time).toString(),
+        avg_test_time: Math.round(total_time / units).toString(),
+        fix_delay: Math.round(fix_delay).toString(),
+        mgmt: mgmt_strategy.toFixed(3),
+        beta: beta.toFixed(3),
+        fef: fef.toFixed(3),
+        new_content: new_content.toFixed(3),
+        start_mtbf: start_mtbf.toFixed(3),
+        start_rf: starting_ul_rf.toFixed(3),
+        start_fr: lambda_start.toFixed(3),
+        lambda_a: lambda_a.toFixed(3),
+        lambda_b: lambda_b.toFixed(3),
+        lam: lam.toFixed(3),
+        intensity: intensity_lambda.toFixed(3),
+        ending_fr: end_failure_rate.toFixed(3),
+        ending_mtbf: ending_mtbf.toFixed(3),
+        initialization: init_threshold.toFixed(3)
+      });
+
+      let x_vals = [];
+      let y_vals = [];
+      const steps = 180;
+      for (let s = 0; s <= steps; s++) {
+        let hour = (total_time / steps) * s;
+        let mtbf;
+        if (hour <= init_threshold) {
+          mtbf = start_mtbf;
+        } else {
+          let fr = lambda_a + lambda_b * (1.0 - fef) + (fef * lam * beta * Math.pow(delay_ratio * hour, beta - 1.0));
+          mtbf = (fr > 0) ? (1.0 / fr) : 0;
+        }
+        x_vals.push(hour + cum_offset);
+        y_vals.push(mtbf);
+      }
+
+      traces.push({
+        x: x_vals,
+        y: y_vals,
+        mode: 'lines',
+        name: phase_name,
+        line: { color: p_cfg.color, width: 3.5 }
+      });
+
+      cum_offset += total_time;
+    }
+
+    traces.push({
+      x: [0, cum_offset],
+      y: [useful_life_mtbf_target, useful_life_mtbf_target],
+      mode: 'lines',
+      name: 'Target MTBF (' + useful_life_mtbf_target.toFixed(3) + ')',
+      line: { color: '#800080', width: 2.5, dash: 'dash' }
+    });
+
+    const layout = {
+      title: { 
+        text: customTitle, 
+        font: { size: 16 },
+        y: 0.98,
+        x: 0.5,
+        xanchor: 'center',
+        yanchor: 'top'
+      },
+      legend: { 
+        orientation: 'h', 
+        y: 1.15, 
+        x: 0.5,
+        xanchor: 'center',
+        yanchor: 'bottom'
+      },
+      xaxis: { 
+        title: 'Cumulative Test Hours', 
+        range: [0, cum_offset], 
+        gridcolor: '#eee',
+        tickformat: 'd',
+        separatethousands: false
+      },
+      yaxis: { 
+        title: 'MTBF', 
+        gridcolor: '#eee',
+        tickformat: 'd',
+        separatethousands: false
+      },
+      margin: { t: 130, r: 25, l: 65, b: 50 },
+      hovermode: 'closest'
+    };
+
+    Plotly.react(getEl('growth_plot'), traces, layout);
+
+    let tbodyHTML = "";
+    currentMetrics.forEach(p => {
+      tbodyHTML += "<tr>";
+      tbodyHTML += "<td style='text-align: left; font-weight: bold; color: " + p.color + ";'>" + p.name + "</td>";
+      tbodyHTML += "<td>" + p.weeks + "</td>";
+      tbodyHTML += "<td>" + p.units + "</td>";
+      tbodyHTML += "<td>" + p.total_time + "</td>";
+      tbodyHTML += "<td>" + p.avg_test_time + "</td>";
+      tbodyHTML += "<td>" + p.fix_delay + "</td>";
+      tbodyHTML += "<td>" + p.mgmt + "</td>";
+      tbodyHTML += "<td>" + p.beta + "</td>";
+      tbodyHTML += "<td>" + p.fef + "</td>";
+      tbodyHTML += "<td>" + p.new_content + "</td>";
+      tbodyHTML += "<td style='font-weight: bold; background: #f8fbff;'>" + p.start_mtbf + "</td>";
+      tbodyHTML += "<td>" + p.start_rf + "</td>";
+      tbodyHTML += "<td>" + p.start_fr + "</td>";
+      tbodyHTML += "<td>" + p.lambda_a + "</td>";
+      tbodyHTML += "<td>" + p.lambda_b + "</td>";
+      tbodyHTML += "<td>" + p.lam + "</td>";
+      tbodyHTML += "<td>" + p.intensity + "</td>";
+      tbodyHTML += "<td>" + p.ending_fr + "</td>";
+      tbodyHTML += "<td style='font-weight: bold; background: #f8fbff;'>" + p.ending_mtbf + "</td>";
+      tbodyHTML += "<td style='font-weight: bold; background: #fffde6;'>" + p.initialization + "</td>";
+      tbodyHTML += "</tr>";
+    });
+
+    if (getEl("phase_output_tbody")) getEl("phase_output_tbody").innerHTML = tbodyHTML;
+  }
+
+  // --- Export to Excel (.xls XML Format) ---
+  function exportExcel() {
+    if (!currentMetrics.length) return;
+
+    let excelHTML = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>RGP Plan</x:Name>
+                <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
+        <style>
+          th { background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc; text-align: center; }
+          td { border: 1px solid #ccc; text-align: center; }
+          .hdr { font-size: 16pt; font-weight: bold; text-align: left; }
+          .sec { font-size: 12pt; font-weight: bold; background-color: #e6f2ff; text-align: left; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <tr><td colspan="6" class="hdr">${currentProgramInputs.title}</td></tr>
+          <tr></tr>
+          <tr><td colspan="6" class="sec">Program & Target Parameters</td></tr>
+          <tr>
+            <td><b>Predecessor CR:</b></td><td>${currentProgramInputs.pred_cr}</td>
+            <td><b>Project CR Target:</b></td><td>${currentProgramInputs.cr_target}</td>
+            <td><b>Average FEF:</b></td><td>${currentProgramInputs.fef}</td>
+          </tr>
+          <tr>
+            <td><b>Infant Mortality CR:</b></td><td>${currentProgramInputs.infant_cr}</td>
+            <td><b>Annual Usage (hrs):</b></td><td>${currentProgramInputs.avg_annual_usage}</td>
+            <td><b>Discovery Beta:</b></td><td>${currentProgramInputs.beta}</td>
+          </tr>
+          <tr>
+            <td><b>PPR Improvements:</b></td><td>${currentProgramInputs.ppr}</td>
+            <td><b>Management Strategy:</b></td><td>${currentProgramInputs.mgmt_strategy}</td>
+            <td><b>Phases Included:</b></td><td>${currentProgramInputs.num_phases}</td>
+          </tr>
+          <tr></tr>
+          <tr><td colspan="6" class="sec">Calculated Program Targets</td></tr>
+          <tr>
+            <td><b>Useful Life MTBF:</b></td><td>${currentProgramInputs.useful_life_mtbf} hrs</td>
+            <td><b>Useful Life RF Target:</b></td><td>${currentProgramInputs.useful_life_rf_target}</td>
+            <td><b>Useful Life MTBF Target:</b></td><td>${currentProgramInputs.useful_life_mtbf_target} hrs</td>
+          </tr>
+          <tr></tr>
+          <tr><td colspan="20" class="sec">RGP Calculation Output Table</td></tr>
+          <tr>
+            <th>Phase</th><th>Weeks</th><th>Units</th><th>Total Test Time</th><th>Avg Test Time / Unit</th>
+            <th>Fix Delay</th><th>Management Strategy</th><th>Discovery Beta</th><th>Average FEF</th>
+            <th>Phase New Content</th><th>Starting UL MTBF</th><th>Starting UL RF</th><th>Starting Failure Rate</th>
+            <th>Lambda A</th><th>Lambda B</th><th>Lambda</th><th>Intensity Lambda</th><th>Ending Failure Rate</th>
+            <th>Ending UL MTBF</th><th>Initialization</th>
+          </tr>
+    `;
+
+    currentMetrics.forEach(p => {
+      excelHTML += `
+        <tr>
+          <td style="text-align: left; font-weight: bold;">${p.name}</td>
+          <td>${p.weeks}</td><td>${p.units}</td><td>${p.total_time}</td><td>${p.avg_test_time}</td>
+          <td>${p.fix_delay}</td><td>${p.mgmt}</td><td>${p.beta}</td><td>${p.fef}</td><td>${p.new_content}</td>
+          <td><b>${p.start_mtbf}</b></td><td>${p.start_rf}</td><td>${p.start_fr}</td><td>${p.lambda_a}</td>
+          <td>${p.lambda_b}</td><td>${p.lam}</td><td>${p.intensity}</td><td>${p.ending_fr}</td>
+          <td><b>${p.ending_mtbf}</b></td><td>${p.initialization}</td>
+        </tr>
+      `;
+    });
+
+    excelHTML += `
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([excelHTML], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${currentProgramInputs.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // --- Export to CSV ---
+  function exportCSV() {
+    if (!currentMetrics.length) return;
+    const headers = [
+      "Phase", "Weeks", "Units", "Total Test Time", "Avg Test Time / Unit",
+      "Fix Delay", "Management Strategy", "Discovery Beta", "Average FEF",
+      "Phase New Content", "Starting UL MTBF", "Starting UL RF",
+      "Starting Failure Rate", "Lambda A", "Lambda B", "Lambda",
+      "Intensity Lambda", "Ending Failure Rate", "Ending UL MTBF", "Initialization"
+    ];
+
+    let csvRows = [headers.join(",")];
+    currentMetrics.forEach(p => {
+      const row = [
+        `"${p.name}"`, p.weeks, p.units, p.total_time, p.avg_test_time,
+        p.fix_delay, p.mgmt, p.beta, p.fef, p.new_content, p.start_mtbf,
+        p.start_rf, p.start_fr, p.lambda_a, p.lambda_b, p.lam, p.intensity,
+        p.ending_fr, p.ending_mtbf, p.initialization
+      ];
+      csvRows.push(row.join(","));
+    });
+
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${currentProgramInputs.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_data.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function bindEvent(id) {
+    const el = getEl(id);
+    if (el) {
+      el.addEventListener("input", recalculate);
+      el.addEventListener("change", recalculate);
+    }
+  }
+
+  bindEvent("project_title_input");
+  bindEvent("inp_pred_cr");
+  bindEvent("inp_infant_cr");
+  bindEvent("inp_ppr");
+  bindEvent("inp_cr_target");
+  bindEvent("inp_annual_usage");
+  bindEvent("inp_mgmt_strat");
+  bindEvent("inp_fef");
+  bindEvent("inp_beta");
+  container.querySelectorAll('input[name="phases"]').forEach(el => el.addEventListener("change", recalculate));
+
+  for (let c = 0; c < 3; c++) {
+    bindEvent("p" + c + "_name");
+    bindEvent("p" + c + "_time");
+    bindEvent("p" + c + "_delay");
+    bindEvent("p" + c + "_content");
+    bindEvent("p" + c + "_units");
+  }
+
+  const excelBtn = getEl("btn_export_excel");
+  if (excelBtn) excelBtn.addEventListener("click", exportExcel);
+
+  const csvBtn = getEl("btn_export_csv");
+  if (csvBtn) csvBtn.addEventListener("click", exportCSV);
+
+  let checkPlotly = setInterval(() => {
+    if (window.Plotly) {
+      clearInterval(checkPlotly);
+      recalculate();
+    }
+  }, 100);
+})();
+</script>
+</body>
+</html>
